@@ -20,13 +20,15 @@ public class AuthenticationController : ControllerBase
     [HttpPost("Register")]
     public IActionResult Register(RegisterRequest request)
     {
-        OneOf<AuthenticationResult, DuplicateEmailError> registerResult = _authenticationService.Login(
+        OneOf<AuthenticationResult, IError> registerResult = _authenticationService.Register(
+            request.FirstName,
+            request.LastName,
             request.Email,
             request.Password);
 
         return registerResult.Match(
             authResult => Ok(MapAuthResult(authResult)),
-            _ => Problem(statusCode: StatusCodes.Status409Conflict, title: "Email already exists."));
+            error => Problem(statusCode: (int)error.StatusCode, title: error.ErrorMessage));
     }
 
     [HttpPost("Login")]
@@ -37,7 +39,7 @@ public class AuthenticationController : ControllerBase
             request.Password);
 
         var response = new AuthenticationResponse(
-             authResult.User.Id,
+            authResult.User.Id,
             authResult.User.FirstName,
             authResult.User.LastName,
             authResult.User.Email,
